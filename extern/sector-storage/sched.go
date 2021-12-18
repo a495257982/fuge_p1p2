@@ -2,7 +2,12 @@ package sectorstorage
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"os"
+	"path"
 	"sort"
 	"sync"
 	"time"
@@ -63,6 +68,12 @@ type scheduler struct {
 	// owned by the sh.runSched goroutine
 	schedQueue  *requestQueue
 	openWindows []*schedWindowRequest
+
+	//added by jack
+	workersip     map[WorkerID]string
+	fixedLK       sync.RWMutex
+	fixedp1worker map[abi.SectorID]WorkerID
+	//ENDING
 
 	workTracker *workTracker
 
@@ -142,9 +153,86 @@ type workerResponse struct {
 	err error
 }
 
+// added by jack
+func get_taskfile() string {
+	miner_path, ok := os.LookupEnv("LOTUS_MINER_PATH")
+	if ok {
+		log.Info("miner_path:", miner_path)
+	} else {
+		log.Warn("none miner_path")
+	}
+	filename := path.Join(miner_path, "task.json")
+
+	return filename
+}
+
+func (sh *scheduler) sync_taskfile() error {
+	sh.fixedLK.Lock()
+	mp1worker := make(map[string]string)
+	for k, v := range sh.fixedp1worker {
+		str := storiface.SectorName(k)
+		mp1worker[str] = uuid.UUID(v).String()
+	}
+	sh.fixedLK.Unlock()
+	data, err := json.Marshal(mp1worker)
+	if err != nil {
+		log.Error(string(data))
+		return err
+	}
+	err = ioutil.WriteFile(get_taskfile(), data, 0644)
+	if err != nil {
+		log.Error("sync task list to file failed!", err)
+		return err
+	}
+
+	return nil
+}
+
+func (sh *scheduler) load_taskfile() error {
+	mp1worker := make(map[string]string)
+	data, err := ioutil.ReadFile(get_taskfile())
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, &mp1worker)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range mp1worker {
+		var n abi.SectorNumber
+		var mid abi.ActorID
+		read, err := fmt.Sscanf(k, "s-t0%d-%d", &mid, &n)
+		if err != nil || read != 2 {
+			log.Error("load_taskfile errored 1!", err)
+			return err
+		}
+		uid, err := uuid.Parse(v)
+		if err != nil {
+			log.Error("load_taskfile errored 2!", err)
+			return err
+		}
+		sh.fixedLK.Lock()
+		sh.fixedp1worker[abi.SectorID{Miner: mid, Number: n}] = WorkerID(uid)
+		sh.fixedLK.Unlock()
+	}
+	log.Infof("load fixed task completed!, task map table is: %+v", sh.fixedp1worker)
+
+	return nil
+}
+
+//ENDING
+
 func newScheduler() *scheduler {
-	return &scheduler{
-		workers: map[WorkerID]*workerHandle{},
+
+	//added by jack
+	/*return &scheduler{
+	workers: map[WorkerID]*workerHandle{},*/
+	sh := &scheduler{
+		workers:       map[WorkerID]*workerHandle{},
+		workersip:     map[WorkerID]string{},
+		fixedp1worker: make(map[abi.SectorID]WorkerID),
+		//ENDING
 
 		schedule:       make(chan *workerRequest),
 		windowRequests: make(chan *schedWindowRequest, 20),
@@ -163,6 +251,10 @@ func newScheduler() *scheduler {
 		closing: make(chan struct{}),
 		closed:  make(chan struct{}),
 	}
+	//added by jack
+	sh.load_taskfile()
+	return sh
+	//ENDING
 }
 
 func (sh *scheduler) Schedule(ctx context.Context, sector storage.SectorRef, taskType sealtasks.TaskType, sel WorkerSelector, prepare WorkerAction, work WorkerAction) error {
@@ -380,6 +472,64 @@ func (sh *scheduler) trySched() {
 
 			task.indexHeap = sqi
 			for wnd, windowRequest := range sh.openWindows {
+
+				// added by jack
+				defer func() {
+					wid, _ := sh.fixedp1worker[task.sector.ID]
+					log.Infof("---------->sid is: %s, wid is%s", storiface.SectorName(task.sector.ID), wid)
+				}()
+				skip := false
+				fixed := func(wid WorkerID) {
+					for wnd1, wiwindowRequest1 := range sh.openWindows {
+						if wiwindowRequest1.worker == wid {
+							wnd = wnd1
+							windowRequest = wiwindowRequest1
+							skip = true
+							break
+						}
+					}
+				}
+				switch task.taskType {
+
+				case sealtasks.TTPreCommit1, sealtasks.TTPreCommit2, sealtasks.TTCommit2, sealtasks.TTFinalize:
+					sh.fixedLK.Lock()
+					wid, ok := sh.fixedp1worker[task.sector.ID]
+					sh.fixedLK.Unlock()
+					if ok {
+						fixed(wid)
+					}
+				case sealtasks.TTCommit1:
+					sh.fixedLK.Lock()
+					wid, ok := sh.fixedp1worker[task.sector.ID]
+					if ok {
+						ip, ok := sh.workersip[wid]
+						if ok && ip != "" {
+							for Wid, iip := range sh.workersip {
+								if iip == ip && Wid != wid {
+									wid = Wid
+									break
+								}
+							}
+						}
+						fixed(wid)
+					}
+					sh.fixedLK.Unlock()
+				default:
+				}
+
+				// TTFinalize任务？ 删除task与worker的映射关系
+				if task.taskType == sealtasks.TTFinalize {
+					sh.fixedLK.Lock()
+					_, ok := sh.fixedp1worker[task.sector.ID]
+					sh.fixedLK.Unlock()
+					if ok {
+						sh.fixedLK.Lock()
+						delete(sh.fixedp1worker, task.sector.ID)
+						sh.fixedLK.Unlock()
+						sh.sync_taskfile()
+					}
+				}
+				//ENDING
 				worker, ok := sh.workers[windowRequest.worker]
 				if !ok {
 					log.Errorf("worker referenced by windowRequest not found (worker: %s)", windowRequest.worker)
@@ -410,6 +560,12 @@ func (sh *scheduler) trySched() {
 				}
 
 				acceptableWindows[sqi] = append(acceptableWindows[sqi], wnd)
+
+				// added by jack
+				if skip == true {
+					break
+				}
+				//ENDING
 			}
 
 			if len(acceptableWindows[sqi]) == 0 {
@@ -487,6 +643,15 @@ func (sh *scheduler) trySched() {
 		}
 
 		windows[selectedWindow].todo = append(windows[selectedWindow].todo, task)
+
+		//added by jack
+		if task.taskType == sealtasks.TTAddPiece || task.taskType == sealtasks.TTCommit1 {
+			sh.fixedLK.Lock()
+			sh.fixedp1worker[task.sector.ID] = sh.openWindows[selectedWindow].worker
+			sh.fixedLK.Unlock()
+			sh.sync_taskfile()
+		}
+		//ENDING
 
 		rmQueue = append(rmQueue, sqi)
 		scheduled++

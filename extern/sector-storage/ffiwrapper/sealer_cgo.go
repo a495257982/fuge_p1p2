@@ -7,13 +7,12 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"github.com/ipfs/go-cid"
+	"golang.org/x/xerrors"
 	"io"
 	"math/bits"
 	"os"
 	"runtime"
-
-	"github.com/ipfs/go-cid"
-	"golang.org/x/xerrors"
 
 	ffi "github.com/filecoin-project/filecoin-ffi"
 	rlepluslazy "github.com/filecoin-project/go-bitfield/rle"
@@ -93,6 +92,7 @@ func (sb *Sealer) AddPiece(ctx context.Context, sector storage.SectorRef, existi
 		if err != nil {
 			return abi.PieceInfo{}, xerrors.Errorf("creating unsealed sector file: %w", err)
 		}
+
 	} else {
 		stagedPath, done, err = sb.sectors.AcquireSector(ctx, sector, storiface.FTUnsealed, 0, storiface.PathSealing)
 		if err != nil {

@@ -60,6 +60,13 @@ func (sh *scheduler) runWorker(ctx context.Context, w Worker) error {
 		sh.workersLk.Unlock()
 		return nil
 	}
+	//added by jack
+	if info.Ipstr != "" {
+		sh.fixedLK.Lock()
+		sh.workersip[wid] = info.Ipstr
+		sh.fixedLK.Unlock()
+	}
+	//EDNING
 
 	sh.workers[wid] = worker
 	sh.workersLk.Unlock()
@@ -100,6 +107,12 @@ func (sw *schedWorker) handleWorker() {
 		sched.workersLk.Lock()
 		delete(sched.workers, sw.wid)
 		sched.workersLk.Unlock()
+		//added by jack
+		sched.fixedLK.Lock()
+		delete(sched.workersip, sw.wid)
+		sched.fixedLK.Unlock()
+		// ENDING
+
 	}()
 
 	defer sw.heartbeatTimer.Stop()

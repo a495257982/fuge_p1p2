@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net"
 	"os"
 	"reflect"
 	"runtime"
@@ -63,6 +64,30 @@ type LocalWorker struct {
 	testDisable int64
 	closing     chan struct{}
 }
+
+//added by jack
+
+func GetLocalIp() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		log.Errorf("read worker local ip failed: %+v", err)
+		return ""
+	}
+
+	ip := ""
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				ip = ipnet.IP.String()
+				break
+			}
+		}
+	}
+
+	return ip
+}
+
+//ENDING
 
 func newLocalWorker(executor ExecutorFunc, wcfg WorkerConfig, store stores.Store, local *stores.Local, sindex stores.SectorIndex, ret storiface.WorkerReturn, cst *statestore.StateStore) *LocalWorker {
 	acceptTasks := map[sealtasks.TaskType]struct{}{}
@@ -509,7 +534,10 @@ func (l *LocalWorker) Info(context.Context) (storiface.WorkerInfo, error) {
 	}
 
 	return storiface.WorkerInfo{
-		Hostname:        hostname,
+		Hostname: hostname,
+		//added by jack
+		Ipstr: GetLocalIp(),
+		//ENDING
 		IgnoreResources: l.ignoreResources,
 		Resources: storiface.WorkerResources{
 			MemPhysical: mem.Total,
