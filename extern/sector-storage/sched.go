@@ -476,7 +476,9 @@ func (sh *scheduler) trySched() {
 				// added by jack
 				defer func() {
 					wid, _ := sh.fixedp1worker[task.sector.ID]
+					pid, _ := sh.workersip[wid]
 					log.Infof("---------->sid is: %s, wid is%s", storiface.SectorName(task.sector.ID), wid)
+					log.Infof("---------->sid is: %s, wid is%s", storiface.SectorName(task.sector.ID), pid)
 				}()
 				skip := false
 				fixed := func(wid WorkerID) {
@@ -491,14 +493,14 @@ func (sh *scheduler) trySched() {
 				}
 				switch task.taskType {
 
-				case sealtasks.TTPreCommit1, sealtasks.TTPreCommit2, sealtasks.TTCommit2, sealtasks.TTFinalize:
+				case sealtasks.TTPreCommit1, sealtasks.TTPreCommit2, sealtasks.TTCommit1, sealtasks.TTFinalize:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
 					sh.fixedLK.Unlock()
 					if ok {
 						fixed(wid)
 					}
-				case sealtasks.TTCommit1:
+				case sealtasks.TTCommit2:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
 					if ok {
@@ -643,7 +645,7 @@ func (sh *scheduler) trySched() {
 		}
 
 		windows[selectedWindow].todo = append(windows[selectedWindow].todo, task)
-
+		//added by pan
 		//added by jack
 		if task.taskType == sealtasks.TTAddPiece || task.taskType == sealtasks.TTCommit1 {
 			sh.fixedLK.Lock()

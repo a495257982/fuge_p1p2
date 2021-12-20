@@ -107,6 +107,7 @@ func (sw *schedWorker) handleWorker() {
 		sched.workersLk.Lock()
 		delete(sched.workers, sw.wid)
 		sched.workersLk.Unlock()
+
 		//added by jack
 		sched.fixedLK.Lock()
 		delete(sched.workersip, sw.wid)
