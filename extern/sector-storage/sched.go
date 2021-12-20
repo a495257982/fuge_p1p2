@@ -646,7 +646,6 @@ func (sh *scheduler) trySched() {
 		}
 
 		windows[selectedWindow].todo = append(windows[selectedWindow].todo, task)
-		//added by pan
 		//added by jack
 		if task.taskType == sealtasks.TTAddPiece || task.taskType == sealtasks.TTCommit1 {
 			sh.fixedLK.Lock()
