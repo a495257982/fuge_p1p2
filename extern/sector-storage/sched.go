@@ -478,7 +478,7 @@ func (sh *scheduler) trySched() {
 					wid, _ := sh.fixedp1worker[task.sector.ID]
 					pid, _ := sh.workersip[wid]
 					log.Infof("---------->sid is: %s, wid is%s", storiface.SectorName(task.sector.ID), wid)
-					log.Infof("---------->sid is: %s, wid is%s", storiface.SectorName(task.sector.ID), pid)
+					log.Infof("---------->sid is: %s, ip is%s", storiface.SectorName(task.sector.ID), pid)
 				}()
 				skip := false
 				fixed := func(wid WorkerID) {
@@ -492,7 +492,6 @@ func (sh *scheduler) trySched() {
 					}
 				}
 				switch task.taskType {
-
 				case sealtasks.TTPreCommit1, sealtasks.TTPreCommit2, sealtasks.TTCommit1, sealtasks.TTFinalize:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
@@ -507,6 +506,7 @@ func (sh *scheduler) trySched() {
 						ip, ok := sh.workersip[wid]
 						if ok && ip != "" {
 							for Wid, iip := range sh.workersip {
+								log.Infof("---------->我的IP: %s", iip)
 								if iip == ip && Wid != wid {
 									wid = Wid
 									break
