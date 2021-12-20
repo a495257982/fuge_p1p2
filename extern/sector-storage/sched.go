@@ -492,14 +492,15 @@ func (sh *scheduler) trySched() {
 					}
 				}
 				switch task.taskType {
-				case sealtasks.TTPreCommit1, sealtasks.TTPreCommit2, sealtasks.TTCommit1, sealtasks.TTFinalize:
+				case sealtasks.TTPreCommit1, sealtasks.TTCommit1:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
+					//added by pan
 					sh.fixedLK.Unlock()
 					if ok {
 						fixed(wid)
 					}
-				case sealtasks.TTCommit2:
+				case sealtasks.TTPreCommit2:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
 					if ok {
