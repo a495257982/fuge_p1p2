@@ -72,6 +72,8 @@ func GetLocalIp() string {
 	if err != nil {
 		log.Errorf("read worker local ip failed: %+v", err)
 		return ""
+	} else {
+		log.Info("read worker ip success ")
 	}
 
 	ip := ""
@@ -84,6 +86,7 @@ func GetLocalIp() string {
 		}
 	}
 
+	log.Info("这台机器的ip is %s", ip)
 	return ip
 }
 

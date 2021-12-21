@@ -492,7 +492,7 @@ func (sh *scheduler) trySched() {
 					}
 				}
 				switch task.taskType {
-				case sealtasks.TTPreCommit1, sealtasks.TTCommit1:
+				case sealtasks.TTPreCommit1:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
 					//added by pan
@@ -507,7 +507,7 @@ func (sh *scheduler) trySched() {
 						ip, ok := sh.workersip[wid]
 						if ok && ip != "" {
 							for Wid, iip := range sh.workersip {
-								log.Infof("---------->我的IP: %s", iip)
+								log.Infof("我的IP: %s", iip)
 								if iip == ip && Wid != wid {
 									wid = Wid
 									break
