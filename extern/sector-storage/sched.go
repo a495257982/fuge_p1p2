@@ -492,15 +492,14 @@ func (sh *scheduler) trySched() {
 					}
 				}
 				switch task.taskType {
-				case sealtasks.TTPreCommit1:
+				case sealtasks.TTPreCommit1, sealtasks.TTPreCommit2, sealtasks.TTCommit2, sealtasks.TTFinalize:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
-					//added by pan
 					sh.fixedLK.Unlock()
 					if ok {
 						fixed(wid)
 					}
-				case sealtasks.TTPreCommit2:
+				case sealtasks.TTCommit1:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
 					if ok {
@@ -520,7 +519,7 @@ func (sh *scheduler) trySched() {
 				default:
 				}
 
-				// TTFinalize任务？ 删除task与worker的映射关系
+				// TTFinalize任务, 删除task与worker的映射关系
 				if task.taskType == sealtasks.TTFinalize {
 					sh.fixedLK.Lock()
 					_, ok := sh.fixedp1worker[task.sector.ID]

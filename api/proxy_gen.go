@@ -879,6 +879,9 @@ type WorkerStruct struct {
 		Version func(p0 context.Context) (Version, error) `perm:"admin"`
 
 		WaitQuiet func(p0 context.Context) error `perm:"admin"`
+		//added by pan
+		MoveToNfsStorage          func(ctx context.Context, sector abi.SectorID)  bool     `perm:"admin"`
+		/*ENDING*/
 	}
 }
 
@@ -4785,6 +4788,12 @@ func (s *WorkerStruct) Fetch(p0 context.Context, p1 storage.SectorRef, p2 storif
 	}
 	return s.Internal.Fetch(p0, p1, p2, p3, p4)
 }
+
+//added by pan
+func (w *WorkerStruct) MoveToNfsStorage(ctx context.Context, sector abi.SectorID) bool {
+	return w.Internal.MoveToNfsStorage(ctx,sector)
+}
+/*ENDING*/
 
 func (s *WorkerStub) Fetch(p0 context.Context, p1 storage.SectorRef, p2 storiface.SectorFileType, p3 storiface.PathType, p4 storiface.AcquireMode) (storiface.CallID, error) {
 	return *new(storiface.CallID), ErrNotSupported

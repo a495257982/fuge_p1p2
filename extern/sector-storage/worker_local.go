@@ -3,9 +3,11 @@ package sectorstorage
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"reflect"
 	"runtime"
 	"sync"
@@ -604,3 +606,32 @@ func (w *wctx) Value(key interface{}) interface{} {
 var _ context.Context = &wctx{}
 
 var _ Worker = &LocalWorker{}
+
+//added by pan
+func (l *LocalWorker) MoveToNfsStorage(ctx context.Context, sector abi.SectorID) bool {
+
+	a := sector.Number
+	b := sector.Miner
+	Path := os.Getenv("MOVEPATH")
+	MinerPath := os.Getenv("MINERSTORAGE")
+
+	movecache := "mv " + MinerPath + "/cache/s-t0" + b.String() + "-" + a.String() + "   " + Path + "/cache"
+	fmt.Println(movecache)
+	movesealed := "mv " + MinerPath + "/sealed/s-t0" + b.String() + "-" + a.String() + "  " + Path + "/sealed"
+	fmt.Println(movesealed)
+	mvcache := exec.Command("bash", "-c", movecache)
+	mvsealed := exec.Command("bash", "-c", movesealed)
+	var err error
+	var output []byte
+	if output, err = mvcache.CombinedOutput(); err != nil {
+		fmt.Println(err)
+	}
+	_ = string(output)
+	var output1 []byte
+	if output1, _ = mvsealed.CombinedOutput(); err != nil {
+	}
+	_ = string(output1)
+	return true
+}
+
+/*ENDING*/

@@ -67,6 +67,10 @@ type Worker interface {
 
 	// Like ProcessSession, but returns an error when worker is disabled
 	Session(context.Context) (uuid.UUID, error) //perm:admin
+
+	//added by pan
+	MoveToNfsStorage(ctx context.Context, sector abi.SectorID) bool
+	/*ENDING*/
 }
 
 var _ storiface.WorkerCalls = *new(Worker)
