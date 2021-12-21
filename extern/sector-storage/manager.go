@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -577,7 +576,7 @@ func (m *Manager) FinalizeSector(ctx context.Context, sector storage.SectorRef, 
 	}
 
 	//added by pan
-	_, _, err = m.storage.AcquireSector(ctx, sector, 0, 2, "storage", "aaa")
+	/*_, _, err = m.storage.AcquireSector(ctx, sector, 0, 2, "storage", "aaa")
 	if err != nil {
 		return xerrors.Errorf("Acquire sealed sector err : %w", err)
 	}
@@ -615,7 +614,7 @@ func (m *Manager) FinalizeSector(ctx context.Context, sector storage.SectorRef, 
 				return nil
 			}
 		}
-	}
+	}*/
 
 	return nil
 }
