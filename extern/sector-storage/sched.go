@@ -513,6 +513,13 @@ func (sh *scheduler) trySched() {
 								}
 							}
 						}
+
+						if ok {
+							log.Info("取不出wordid")
+						}
+						if ip == "" {
+							log.Info("ipea是空的")
+						}
 						fixed(wid)
 					}
 					sh.fixedLK.Unlock()
