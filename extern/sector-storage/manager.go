@@ -594,9 +594,10 @@ func (m *Manager) FinalizeSector(ctx context.Context, sector storage.SectorRef, 
 			for _, url := range info.URLs {
 				if len(url) != 0 {
 					log.Info("pprinturl__", url)
-					a := strings.Index(url, "3456")
+					a := strings.Index(url, "/remote")
 					l1 := url[:a]
-					l2 := l1 + "3456/rpc/v0"
+					l2 := l1 + "/rpc/v0"
+					log.Info("gaizaohou__", l2)
 					cha := FetchToNfsStorage(sector, l2)
 					if !cha {
 						log.Info("移动扇区失败，需要手动移动：%w", sector.ID.Number)

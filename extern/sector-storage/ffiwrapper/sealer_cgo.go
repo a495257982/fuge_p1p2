@@ -153,6 +153,7 @@ func (sb *Sealer) AddPiece(ctx context.Context, sector storage.SectorRef, existi
 		//added by jack
 		adpath, ok := os.LookupEnv("PRE_ADDPIECE_PATH")
 		if ok && adpath != "" {
+			log.Info("---------->load PRE_ADDPIECE_PATH OK")
 			data, err := os.ReadFile(filepath.Join(adpath, "unsealed/cid"))
 			if err == nil {
 				dcid, err := cid.Decode(string(data))
