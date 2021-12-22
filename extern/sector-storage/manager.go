@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -556,27 +557,28 @@ func (m *Manager) FinalizeSector(ctx context.Context, sector storage.SectorRef, 
 	if err != nil {
 		return err
 	}
+	/*
 
-	fetchSel := newAllocSelector(m.index, storiface.FTCache|storiface.FTSealed, storiface.PathStorage)
-	moveUnsealed := unsealed
-	{
-		if len(keepUnsealed) == 0 {
-			moveUnsealed = storiface.FTNone
+		fetchSel := newAllocSelector(m.index, storiface.FTCache|storiface.FTSealed, storiface.PathStorage)
+		moveUnsealed := unsealed
+		{
+			if len(keepUnsealed) == 0 {
+				moveUnsealed = storiface.FTNone
+			}
 		}
-	}
 
-	err = m.sched.Schedule(ctx, sector, sealtasks.TTFetch, fetchSel,
-		m.schedFetch(sector, storiface.FTCache|storiface.FTSealed|moveUnsealed, storiface.PathStorage, storiface.AcquireMove),
-		func(ctx context.Context, w Worker) error {
-			_, err := m.waitSimpleCall(ctx)(w.MoveStorage(ctx, sector, storiface.FTCache|storiface.FTSealed|moveUnsealed))
-			return err
-		})
-	if err != nil {
-		return xerrors.Errorf("moving sector to storage: %w", err)
-	}
+		err = m.sched.Schedule(ctx, sector, sealtasks.TTFetch, fetchSel,
+			m.schedFetch(sector, storiface.FTCache|storiface.FTSealed|moveUnsealed, storiface.PathStorage, storiface.AcquireMove),
+			func(ctx context.Context, w Worker) error {
+				_, err := m.waitSimpleCall(ctx)(w.MoveStorage(ctx, sector, storiface.FTCache|storiface.FTSealed|moveUnsealed))
+				return err
+			})
+		if err != nil {
+			return xerrors.Errorf("moving sector to storage: %w", err)
+		}*/
 
 	//added by pan
-	/*_, _, err = m.storage.AcquireSector(ctx, sector, 0, 2, "storage", "aaa")
+	_, _, err = m.storage.AcquireSector(ctx, sector, 0, 2, "storage", "aaa")
 	if err != nil {
 		return xerrors.Errorf("Acquire sealed sector err : %w", err)
 	}
@@ -614,7 +616,7 @@ func (m *Manager) FinalizeSector(ctx context.Context, sector storage.SectorRef, 
 				return nil
 			}
 		}
-	}*/
+	}
 
 	return nil
 }

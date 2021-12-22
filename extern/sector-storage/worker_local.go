@@ -613,7 +613,7 @@ func (l *LocalWorker) MoveToNfsStorage(ctx context.Context, sector abi.SectorID)
 	a := sector.Number
 	b := sector.Miner
 	Path := os.Getenv("MOVEPATH")
-	MinerPath := os.Getenv("MINERSTORAGE")
+	MinerPath := os.Getenv("LOTUS_WORKER_PP")
 
 	movecache := "mv " + MinerPath + "/cache/s-t0" + b.String() + "-" + a.String() + "   " + Path + "/cache"
 	fmt.Println(movecache)

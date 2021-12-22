@@ -492,14 +492,14 @@ func (sh *scheduler) trySched() {
 					}
 				}
 				switch task.taskType {
-				case sealtasks.TTPreCommit1, sealtasks.TTPreCommit2, sealtasks.TTCommit2, sealtasks.TTFinalize:
+				case sealtasks.TTPreCommit1:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
 					sh.fixedLK.Unlock()
 					if ok {
 						fixed(wid)
 					}
-				case sealtasks.TTCommit1:
+				case sealtasks.TTPreCommit2:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
 					if ok {
@@ -513,7 +513,6 @@ func (sh *scheduler) trySched() {
 								}
 							}
 						}
-
 						if ok {
 							log.Info("取不出wordid")
 						}
@@ -525,7 +524,6 @@ func (sh *scheduler) trySched() {
 					sh.fixedLK.Unlock()
 				default:
 				}
-
 				// TTFinalize任务, 删除task与worker的映射关系
 				if task.taskType == sealtasks.TTFinalize {
 					sh.fixedLK.Lock()
