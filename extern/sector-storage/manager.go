@@ -617,7 +617,6 @@ func (m *Manager) FinalizeSector(ctx context.Context, sector storage.SectorRef, 
 			}
 		}
 	}
-
 	return nil
 }
 
