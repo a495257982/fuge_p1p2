@@ -589,33 +589,43 @@ func (m *Manager) FinalizeSector(ctx context.Context, sector storage.SectorRef, 
 	}
 
 	si, err := m.index.StorageFindSector(ctx, sector.ID, storiface.FTSealed, 0, false)
-	for _, info := range si {
-		for _, url := range info.URLs {
-			a := strings.Index(url, "3456")
-			l1 := url[:a]
-			l2 := l1 + "3456/rpc/v0"
-			cha := FetchToNfsStorage(sector, l2)
-			if !cha {
-				log.Info("移动扇区失败，需要手动移动：%w", sector.ID.Number)
-				return nil
+	if len(si) != 0 {
+		for _, info := range si {
+			for _, url := range info.URLs {
+				if len(url) != 0 {
+					log.Info("pprinturl__", url)
+					a := strings.Index(url, "3456")
+					l1 := url[:a]
+					l2 := l1 + "3456/rpc/v0"
+					cha := FetchToNfsStorage(sector, l2)
+					if !cha {
+						log.Info("移动扇区失败，需要手动移动：%w", sector.ID.Number)
+						return nil
+					}
+					var Pathid string
+					Pathid = os.Getenv("PATHID")
+					if Pathid == "" {
+						log.Info("获取 storage id 失败 ")
+						return nil
+					}
+					err := m.index.StorageDeclareSector(ctx, stores.ID(Pathid), sector.ID, 2, true)
+					if err != nil {
+						log.Info("声明 sector失败")
+						return nil
+					}
+					err1 := m.index.StorageDeclareSector(ctx, stores.ID(Pathid), sector.ID, 4, true)
+					if err1 != nil {
+						log.Info("声明 sector失败")
+						return nil
+					}
+				} else {
+					log.Info("url为空")
+				}
 			}
-			var Pathid string
-			Pathid = os.Getenv("PATHID")
-			if Pathid == "" {
-				log.Info("获取 storage id 失败 ")
-				return nil
-			}
-			err := m.index.StorageDeclareSector(ctx, stores.ID(Pathid), sector.ID, 2, true)
-			if err != nil {
-				log.Info("声明 sector失败")
-				return nil
-			}
-			err1 := m.index.StorageDeclareSector(ctx, stores.ID(Pathid), sector.ID, 4, true)
-			if err1 != nil {
-				log.Info("声明 sector失败")
-				return nil
-			}
+			log.Info("sectors ", sector.ID.Number, "声明成功")
 		}
+	} else {
+		log.Info("si 为空")
 	}
 	return nil
 }
