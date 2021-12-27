@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"reflect"
@@ -57,8 +56,8 @@ type LocalWorker struct {
 	// see equivalent field on WorkerConfig.
 	ignoreResources bool
 
-	ct          *workerCallTracker
 	acceptTasks map[sealtasks.TaskType]struct{}
+	ct          *workerCallTracker
 	running     sync.WaitGroup
 	taskLk      sync.Mutex
 
@@ -70,7 +69,7 @@ type LocalWorker struct {
 //added by jack
 
 func GetLocalIp() string {
-	addrs, err := net.InterfaceAddrs()
+	/*addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		log.Errorf("read worker local ip failed: %+v", err)
 		return ""
@@ -87,9 +86,10 @@ func GetLocalIp() string {
 			}
 		}
 	}
-
-	log.Info("这台机器的ip is %s", ip)
-	return ip
+	*/
+	Path := os.Getenv("W_PLAN")
+	log.Info("这个进程的组 is %s", Path)
+	return Path
 }
 
 //ENDING

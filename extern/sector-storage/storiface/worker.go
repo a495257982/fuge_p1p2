@@ -15,6 +15,13 @@ import (
 	"github.com/filecoin-project/lotus/extern/sector-storage/sealtasks"
 )
 
+//added by pan
+type Band struct {
+	Ipstr    string
+	RepoPath string
+}
+
+//added by pan
 type WorkerInfo struct {
 	Hostname string
 
