@@ -3,7 +3,6 @@ package sectorstorage
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -616,15 +615,15 @@ func (l *LocalWorker) MoveToNfsStorage(ctx context.Context, sector abi.SectorID)
 	MinerPath := os.Getenv("LOTUS_WORKER_PP")
 
 	movecache := "mv " + MinerPath + "/cache/s-t0" + b.String() + "-" + a.String() + "   " + Path + "/cache"
-	fmt.Println(movecache)
+	log.Info(movecache)
 	movesealed := "mv " + MinerPath + "/sealed/s-t0" + b.String() + "-" + a.String() + "  " + Path + "/sealed"
-	fmt.Println(movesealed)
+	log.Info(movesealed)
 	mvcache := exec.Command("bash", "-c", movecache)
 	mvsealed := exec.Command("bash", "-c", movesealed)
 	var err error
 	var output []byte
 	if output, err = mvcache.CombinedOutput(); err != nil {
-		fmt.Println(err)
+		log.Info("没有移动成功", err)
 	}
 	_ = string(output)
 	var output1 []byte

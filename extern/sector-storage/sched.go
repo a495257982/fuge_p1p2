@@ -474,12 +474,12 @@ func (sh *scheduler) trySched() {
 			for wnd, windowRequest := range sh.openWindows {
 
 				// added by jack
-				defer func() {
+				/*defer func() {
 					wid, _ := sh.fixedp1worker[task.sector.ID]
 					pid, _ := sh.workersip[wid]
 					log.Infof("---------->sid is: %s, wid is%s", storiface.SectorName(task.sector.ID), wid)
 					log.Infof("---------->sid is: %s, ip is%s", storiface.SectorName(task.sector.ID), pid)
-				}()
+				}()*/
 				skip := false
 				fixed := func(wid WorkerID) {
 					for wnd1, wiwindowRequest1 := range sh.openWindows {
@@ -506,7 +506,7 @@ func (sh *scheduler) trySched() {
 						ip, ok := sh.workersip[wid]
 						if ok && ip != "" {
 							for Wid, iip := range sh.workersip {
-								log.Infof("我的IP: %s", iip)
+								//	log.Infof("我的IP: %s", iip)
 								if iip == ip && Wid != wid {
 									wid = Wid
 									break
@@ -514,10 +514,10 @@ func (sh *scheduler) trySched() {
 							}
 						}
 						if ok {
-							log.Info("取不出wordid")
+							//	log.Info("取不出wordid")
 						}
 						if ip == "" {
-							log.Info("ipea是空的")
+							//log.Info("ipea是空的")
 						}
 						fixed(wid)
 					}
