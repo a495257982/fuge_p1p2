@@ -66,7 +66,7 @@ func (sh *scheduler) runWorker(ctx context.Context, w Worker) error {
 		sh.workersip[wid] = info.Ipstr
 		sh.fixedLK.Unlock()
 	} else {
-		log.Info("这个worker启动的时候IP是空的，所以没办法加入workerip列表")
+		//log.Info("这个worker启动的时候IP是空的，所以没办法加入workerip列表")
 	}
 	//EDNING
 

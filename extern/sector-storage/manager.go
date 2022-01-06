@@ -593,40 +593,40 @@ func (m *Manager) FinalizeSector(ctx context.Context, sector storage.SectorRef, 
 		for _, info := range si {
 			for _, url := range info.URLs {
 				if len(url) != 0 {
-					log.Info("pprinturl__", url)
+					//log.Info("pprinturl__", url)
 					a := strings.Index(url, "/remote")
 					l1 := url[:a]
 					l2 := l1 + "/rpc/v0"
-					log.Info("gaizaohou__", l2)
+					//log.Info("gaizaohou__", l2)
 					cha := FetchToNfsStorage(sector, l2)
 					if !cha {
-						log.Info("移动扇区失败，需要手动移动：%w", sector.ID.Number)
+						//log.Info("移动扇区失败，需要手动移动：%w", sector.ID.Number)
 						return nil
 					}
 					var Pathid string
 					Pathid = os.Getenv("PATHID")
 					if Pathid == "" {
-						log.Info("获取 storage id 失败 ")
+						//log.Info("获取 storage id 失败 ")
 						return nil
 					}
 					err := m.index.StorageDeclareSector(ctx, stores.ID(Pathid), sector.ID, 2, true)
 					if err != nil {
-						log.Info("声明 sector失败")
+						//log.Info("声明 sector失败")
 						return nil
 					}
 					err1 := m.index.StorageDeclareSector(ctx, stores.ID(Pathid), sector.ID, 4, true)
 					if err1 != nil {
-						log.Info("声明 sector失败")
+						//log.Info("声明 sector失败")
 						return nil
 					}
 				} else {
-					log.Info("url为空")
+					//log.Info("url为空")
 				}
 			}
-			log.Info("sectors ", sector.ID.Number, "声明成功")
+			//log.Info("sectors ", sector.ID.Number, "声明成功")
 		}
 	} else {
-		log.Info("si 为空")
+		//log.Info("si 为空")
 	}
 	return nil
 }
@@ -647,7 +647,7 @@ func FetchToNfsStorage(sector storage.SectorRef, URL string) bool {
 	// Create a Bearer string by appending string access token
 	workerstoken := os.Getenv("WORKERSTOKEN")
 	if workerstoken == "" {
-		log.Info("获取WORKERSTOKEN 失败，查看环境变量是否定义")
+		//log.Info("获取WORKERSTOKEN 失败，查看环境变量是否定义")
 		return false
 	}
 	var bearer = "Bearer " + workerstoken

@@ -157,9 +157,9 @@ type workerResponse struct {
 func get_taskfile() string {
 	miner_path, ok := os.LookupEnv("LOTUS_MINER_PATH")
 	if ok {
-		log.Info("miner_path:", miner_path)
+		//log.Info("miner_path:", miner_path)
 	} else {
-		log.Warn("none miner_path")
+		//log.Warn("none miner_path")
 	}
 	filename := path.Join(miner_path, "task.json")
 
