@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"sync"
@@ -93,10 +95,32 @@ func GetLocalIp() string {
 
 //ENDING
 
+//added by jack
+func (l *LocalWorker) SetSession(sessionid uuid.UUID) error {
+
+	l.session = sessionid
+	return nil
+}
+
+//ENDING
+
 func newLocalWorker(executor ExecutorFunc, wcfg WorkerConfig, store stores.Store, local *stores.Local, sindex stores.SectorIndex, ret storiface.WorkerReturn, cst *statestore.StateStore) *LocalWorker {
 	acceptTasks := map[sealtasks.TaskType]struct{}{}
 	for _, taskType := range wcfg.TaskTypes {
 		acceptTasks[taskType] = struct{}{}
+	}
+
+	//added by jack
+
+	repoPath := os.Getenv("IDPATH")
+
+	sessionid := ""
+	date, err := ioutil.ReadFile(filepath.Join(repoPath, "workerid"))
+	if err == nil {
+		sessionid = string(date)
+	} else {
+		sessionid = uuid.New().String()
+		ioutil.WriteFile(filepath.Join(repoPath, "workerid"), []byte(sessionid), 0666)
 	}
 
 	w := &LocalWorker{
@@ -112,8 +136,8 @@ func newLocalWorker(executor ExecutorFunc, wcfg WorkerConfig, store stores.Store
 		executor:        executor,
 		noSwap:          wcfg.NoSwap,
 		ignoreResources: wcfg.IgnoreResourceFiltering,
-		session:         uuid.New(),
-		closing:         make(chan struct{}),
+		//session:         uuid.New(),
+		closing: make(chan struct{}),
 	}
 
 	if w.executor == nil {
@@ -139,12 +163,14 @@ func newLocalWorker(executor ExecutorFunc, wcfg WorkerConfig, store stores.Store
 			}
 		}
 	}()
-
+	w.SetSession(uuid.MustParse(sessionid))
 	return w
 }
 
 func NewLocalWorker(wcfg WorkerConfig, store stores.Store, local *stores.Local, sindex stores.SectorIndex, ret storiface.WorkerReturn, cst *statestore.StateStore) *LocalWorker {
+
 	return newLocalWorker(nil, wcfg, store, local, sindex, ret, cst)
+
 }
 
 type localWorkerPathProvider struct {
@@ -296,7 +322,6 @@ func toCallError(err error) *storiface.CallError {
 	if err != nil && !xerrors.As(err, &serr) {
 		serr = storiface.Err(storiface.ErrUnknown, err)
 	}
-
 	return serr
 }
 
@@ -313,7 +338,6 @@ func doReturn(ctx context.Context, rt ReturnType, ci storiface.CallID, ret stori
 		case <-time.After(5 * time.Second):
 		case <-ctx.Done():
 			log.Errorf("failed to return results: %s", ctx.Err())
-
 			// fine to just return, worker is most likely shutting down, and
 			// we didn't mark the result as returned yet, so we'll try to
 			// re-submit it on restart

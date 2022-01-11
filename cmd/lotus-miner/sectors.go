@@ -61,6 +61,14 @@ var sectorsCmd = &cli.Command{
 var sectorsPledgeCmd = &cli.Command{
 	Name:  "pledge",
 	Usage: "store random data in a sector",
+	// added by jack
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:  "workerid",
+			Value: "",
+		},
+	},
+	//ENDING
 	Action: func(cctx *cli.Context) error {
 		nodeApi, closer, err := lcli.GetStorageMinerAPI(cctx)
 		if err != nil {
