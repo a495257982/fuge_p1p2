@@ -32,6 +32,7 @@ func (m *Miner) ListSectors() ([]sealing.SectorInfo, error) {
 }
 
 func (m *Miner) PledgeSector(ctx context.Context) (storage.SectorRef, error) {
+	log.Infof("第二层", ctx)
 	return m.sealing.PledgeSector(ctx)
 }
 

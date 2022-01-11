@@ -15,6 +15,7 @@ import (
 )
 
 func (m *Sealing) PledgeSector(ctx context.Context) (storage.SectorRef, error) {
+	log.Infof("第三层", ctx)
 	m.startupWait.Wait()
 
 	m.inputLk.Lock()
