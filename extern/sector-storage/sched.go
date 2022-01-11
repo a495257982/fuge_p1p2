@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"sync"
 	"time"
@@ -492,6 +494,19 @@ func (sh *scheduler) trySched() {
 					}
 				}
 				switch task.taskType {
+				case sealtasks.TTAddPiece:
+					if homedir, err := homedir.Expand("~"); err == nil {
+						_, err := os.Stat(filepath.Join(homedir, "./FixedSectorWorkerId"))
+						notexist := os.IsNotExist(err)
+						if !notexist {
+							data, err := os.ReadFile(path.Join(homedir, "./FixedSectorWorkerId", storiface.SectorName(task.sector.ID)+".cfg"))
+							if err == nil {
+								sh.fixedLK.Lock()
+								defer sh.fixedLK.Unlock()
+								fixed(WorkerID(uuid.MustParse(string(data))))
+							}
+						}
+					}
 				case sealtasks.TTPreCommit1:
 					sh.fixedLK.Lock()
 					wid, ok := sh.fixedp1worker[task.sector.ID]
