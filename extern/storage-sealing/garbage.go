@@ -42,11 +42,13 @@ func (m *Sealing) PledgeSector(ctx context.Context) (storage.SectorRef, error) {
 	}
 
 	// added by jack
-	workerid := string(ctx.Value("workerid").([]byte))
-	/*	workerid := ""
-		if ctx.Value("workerid") != nil {
-			workerid = ctx.Value("workerid").(string)
-		}*/
+	//workerid := string(ctx.Value("workerid").([]byte))
+	workerid := ""
+	if ctx.Value("workerid") != nil {
+		workerid = ctx.Value("workerid").(string)
+	} else {
+		log.Infof("still valid")
+	}
 	log.Infof("------------------probe used as detect preallocated task to workerid!, sid=%d, workerid=%s", sid, workerid)
 	if workerid != "" {
 		if homedir, err := homedir.Expand("~"); err == nil {

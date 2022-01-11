@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -68,7 +69,7 @@ var sectorsPledgeCmd = &cli.Command{
 			Value: "",
 		},
 	},
-	//ENDING
+
 	Action: func(cctx *cli.Context) error {
 		nodeApi, closer, err := lcli.GetStorageMinerAPI(cctx)
 		if err != nil {
@@ -76,11 +77,14 @@ var sectorsPledgeCmd = &cli.Command{
 		}
 		defer closer()
 		ctx := lcli.ReqContext(cctx)
+		workerid := cctx.String("workerid")
+		ccctx := context.WithValue(ctx, "workerid", workerid)
 
-		id, err := nodeApi.PledgeSector(ctx)
+		id, err := nodeApi.PledgeSector(ccctx)
 		if err != nil {
 			return err
 		}
+		//ENDING
 
 		fmt.Println("Created CC sector: ", id.Number)
 
