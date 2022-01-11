@@ -79,6 +79,7 @@ var sectorsPledgeCmd = &cli.Command{
 		ctx := lcli.ReqContext(cctx)
 		workerid := cctx.String("workerid")
 		ccctx := context.WithValue(ctx, "workerid", workerid)
+		log.Infof("ccctxn is ", ccctx)
 
 		id, err := nodeApi.PledgeSector(ccctx)
 		if err != nil {
