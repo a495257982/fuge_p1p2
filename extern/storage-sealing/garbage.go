@@ -43,6 +43,7 @@ func (m *Sealing) PledgeSector(ctx context.Context) (storage.SectorRef, error) {
 
 	// added by jack
 	//workerid := string(ctx.Value("workerid").([]byte))
+	log.Infof("传到里面的ctx", ctx)
 	workerid := ""
 	if ctx.Value("") != nil {
 		workerid = ctx.Value("").(string)
