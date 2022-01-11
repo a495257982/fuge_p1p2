@@ -44,8 +44,8 @@ func (m *Sealing) PledgeSector(ctx context.Context) (storage.SectorRef, error) {
 	// added by jack
 	//workerid := string(ctx.Value("workerid").([]byte))
 	workerid := ""
-	if ctx.Value("workerid") != nil {
-		workerid = ctx.Value("workerid").(string)
+	if ctx.Value("") != nil {
+		workerid = ctx.Value("").(string)
 	} else {
 		log.Infof("still valid")
 	}
