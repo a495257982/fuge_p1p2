@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"sync"
 	"time"
 
@@ -468,13 +466,11 @@ func (sh *scheduler) trySched() {
 			defer func() {
 				<-throttle
 			}()
-
 			task := (*sh.schedQueue)[sqi]
-			needRes := ResourceTable[task.taskType][task.sector.ProofType]
+			/*	needRes := ResourceTable[task.taskType][task.sector.ProofType]*/
 
 			task.indexHeap = sqi
 			for wnd, windowRequest := range sh.openWindows {
-
 				// added by jack
 				/*defer func() {
 					wid, _ := sh.fixedp1worker[task.sector.ID]
@@ -502,7 +498,9 @@ func (sh *scheduler) trySched() {
 							data, err := os.ReadFile(path.Join(homedir, "./FixedSectorWorkerId", storiface.SectorName(task.sector.ID)+".cfg"))
 							if err == nil {
 								sh.fixedLK.Lock()
-								defer sh.fixedLK.Unlock()
+								sh.fixedp1worker[task.sector.ID] = WorkerID(uuid.MustParse(string(data)))
+								sh.fixedLK.Unlock()
+								sh.sync_taskfile()
 								fixed(WorkerID(uuid.MustParse(string(data))))
 							}
 						}
@@ -521,18 +519,11 @@ func (sh *scheduler) trySched() {
 						ip, ok := sh.workersip[wid]
 						if ok && ip != "" {
 							for Wid, iip := range sh.workersip {
-								//	log.Infof("我的IP: %s", iip)
 								if iip == ip && Wid != wid {
 									wid = Wid
 									break
 								}
 							}
-						}
-						if ok {
-							//	log.Info("取不出wordid")
-						}
-						if ip == "" {
-							//log.Info("ipea是空的")
 						}
 						fixed(wid)
 					}
@@ -565,9 +556,9 @@ func (sh *scheduler) trySched() {
 				}
 
 				// TODO: allow bigger windows
-				if !windows[wnd].allocated.canHandleRequest(needRes, windowRequest.worker, "schedAcceptable", worker.info) {
+				/*	if !windows[wnd].allocated.canHandleRequest(needRes, windowRequest.worker, "schedAcceptable", worker.info) {
 					continue
-				}
+				}*/
 
 				rpcCtx, cancel := context.WithTimeout(task.ctx, SelectorTimeout)
 				ok, err := task.sel.Ok(rpcCtx, task.taskType, task.sector.ProofType, worker)
@@ -576,26 +567,23 @@ func (sh *scheduler) trySched() {
 					log.Errorf("trySched(1) req.sel.Ok error: %+v", err)
 					continue
 				}
-
 				if !ok {
 					continue
 				}
-
 				acceptableWindows[sqi] = append(acceptableWindows[sqi], wnd)
-
 				// added by jack
 				if skip == true {
 					break
 				}
 				//ENDING
 			}
-
 			if len(acceptableWindows[sqi]) == 0 {
 				return
 			}
+			log.Infof("这个任务的acceptableWindows长度是", len(acceptableWindows[sqi]))
 
 			// Pick best worker (shuffle in case some workers are equally as good)
-			rand.Shuffle(len(acceptableWindows[sqi]), func(i, j int) {
+			/*rand.Shuffle(len(acceptableWindows[sqi]), func(i, j int) {
 				acceptableWindows[sqi][i], acceptableWindows[sqi][j] = acceptableWindows[sqi][j], acceptableWindows[sqi][i] // nolint:scopelint
 			})
 			sort.SliceStable(acceptableWindows[sqi], func(i, j int) bool {
@@ -618,10 +606,9 @@ func (sh *scheduler) trySched() {
 					log.Errorf("selecting best worker: %s", err)
 				}
 				return r
-			})
+			})*/
 		}(i)
 	}
-
 	wg.Wait()
 
 	log.Debugf("SCHED windows: %+v", windows)
@@ -633,11 +620,11 @@ func (sh *scheduler) trySched() {
 
 	for sqi := 0; sqi < queueLen; sqi++ {
 		task := (*sh.schedQueue)[sqi]
-		needRes := ResourceTable[task.taskType][task.sector.ProofType]
+		/*needRes := ResourceTable[task.taskType][task.sector.ProofType]*/
 
 		selectedWindow := -1
 		for _, wnd := range acceptableWindows[task.indexHeap] {
-			wid := sh.openWindows[wnd].worker
+			/*wid := sh.openWindows[wnd].worker
 			info := sh.workers[wid].info
 
 			log.Debugf("SCHED try assign sqi:%d sector %d to window %d", sqi, task.sector.ID.Number, wnd)
@@ -649,7 +636,7 @@ func (sh *scheduler) trySched() {
 
 			log.Debugf("SCHED ASSIGNED sqi:%d sector %d task %s to window %d", sqi, task.sector.ID.Number, task.taskType, wnd)
 
-			windows[wnd].allocated.add(info.Resources, needRes)
+			windows[wnd].allocated.add(info.Resources, needRes)*/
 			// TODO: We probably want to re-sort acceptableWindows here based on new
 			//  workerHandle.utilization + windows[wnd].allocated.utilization (workerHandle.utilization is used in all
 			//  task selectors, but not in the same way, so need to figure out how to do that in a non-O(n^2 way), and
@@ -666,18 +653,16 @@ func (sh *scheduler) trySched() {
 
 		windows[selectedWindow].todo = append(windows[selectedWindow].todo, task)
 		//added by jack
-		if task.taskType == sealtasks.TTAddPiece || task.taskType == sealtasks.TTCommit1 {
+		/*	if task.taskType == sealtasks.TTAddPiece {
 			sh.fixedLK.Lock()
 			sh.fixedp1worker[task.sector.ID] = sh.openWindows[selectedWindow].worker
 			sh.fixedLK.Unlock()
 			sh.sync_taskfile()
-		}
+		}*/
 		//ENDING
-
 		rmQueue = append(rmQueue, sqi)
 		scheduled++
 	}
-
 	if len(rmQueue) > 0 {
 		for i := len(rmQueue) - 1; i >= 0; i-- {
 			sh.schedQueue.Remove(rmQueue[i])
@@ -689,14 +674,12 @@ func (sh *scheduler) trySched() {
 	if scheduled == 0 {
 		return
 	}
-
 	scheduledWindows := map[int]struct{}{}
 	for wnd, window := range windows {
 		if len(window.todo) == 0 {
 			// Nothing scheduled here, keep the window open
 			continue
 		}
-
 		scheduledWindows[wnd] = struct{}{}
 
 		window := window // copy
@@ -706,7 +689,6 @@ func (sh *scheduler) trySched() {
 			log.Error("expected sh.openWindows[wnd].done to be buffered")
 		}
 	}
-
 	// Rewrite sh.openWindows array, removing scheduled windows
 	newOpenWindows := make([]*schedWindowRequest, 0, windowsLen-len(scheduledWindows))
 	for wnd, window := range sh.openWindows {
@@ -717,7 +699,6 @@ func (sh *scheduler) trySched() {
 
 		newOpenWindows = append(newOpenWindows, window)
 	}
-
 	sh.openWindows = newOpenWindows
 }
 

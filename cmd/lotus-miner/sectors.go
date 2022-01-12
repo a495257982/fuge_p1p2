@@ -2,11 +2,13 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mitchellh/go-homedir"
 	"os"
+	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -69,7 +71,6 @@ var sectorsPledgeCmd = &cli.Command{
 			Value: "",
 		},
 	},
-
 	Action: func(cctx *cli.Context) error {
 		nodeApi, closer, err := lcli.GetStorageMinerAPI(cctx)
 		if err != nil {
@@ -78,18 +79,34 @@ var sectorsPledgeCmd = &cli.Command{
 		defer closer()
 		ctx := lcli.ReqContext(cctx)
 		workerid := cctx.String("workerid")
-		ccctx := context.WithValue(ctx, "workerid", workerid)
-		log.Infof("ccctxn is ", ccctx.Value("workerid"))
-		log.Infof("workerid is ", workerid)
+		log.Infof("------------------probe used as detect preallocated task to workerid!, sid=%d, workerid=%s", workerid)
+		if workerid != "" {
+			if homedir, err := homedir.Expand("~"); err == nil {
+				for i := 0; i < 2; i++ {
+					_, err := os.Stat(filepath.Join(homedir, "./FixedSectorWorkerId"))
+					notexist := os.IsNotExist(err)
+					if notexist {
+						err = os.MkdirAll(filepath.Join(homedir, "./FixedSectorWorkerId"), 0755)
 
-		id, err := nodeApi.PledgeSector(ccctx)
+						if err == nil {
+							break
+						}
+					} else {
+						err := os.WriteFile(path.Join(homedir, "./FixedSectorWorkerId", "workerid.cfg"), []byte(workerid), 0666)
+						if err == nil {
+							break
+						}
+					}
+				}
+			}
+		}
+		//ending
+		id, err := nodeApi.PledgeSector(ctx)
 		if err != nil {
 			return err
 		}
 		//ENDING
-
 		fmt.Println("Created CC sector: ", id.Number)
-
 		return nil
 	},
 }
