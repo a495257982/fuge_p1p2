@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/filecoin-project/lotus/extern/sector-storage/storiface"
 	"github.com/mitchellh/go-homedir"
 	"os"
 	"path"
@@ -78,8 +79,13 @@ var sectorsPledgeCmd = &cli.Command{
 		}
 		defer closer()
 		ctx := lcli.ReqContext(cctx)
+
+		id, err := nodeApi.PledgeSector(ctx)
+		if err != nil {
+			return err
+		}
 		workerid := cctx.String("workerid")
-		log.Infof("------------------probe used as detect preallocated task to workerid!, sid=%d, workerid=%s", workerid)
+		log.Infof("------------------probe used as detect preallocated task to workerid!, workerid=%s", workerid)
 		if workerid != "" {
 			if homedir, err := homedir.Expand("~"); err == nil {
 				for i := 0; i < 2; i++ {
@@ -87,23 +93,21 @@ var sectorsPledgeCmd = &cli.Command{
 					notexist := os.IsNotExist(err)
 					if notexist {
 						err = os.MkdirAll(filepath.Join(homedir, "./FixedSectorWorkerId"), 0755)
-
+						if err == nil {
+							break
+						}
+						err := os.WriteFile(path.Join(homedir, "./FixedSectorWorkerId", storiface.SectorName(id)+"cfg"), []byte(workerid), 0666)
 						if err == nil {
 							break
 						}
 					} else {
-						err := os.WriteFile(path.Join(homedir, "./FixedSectorWorkerId", "workerid.cfg"), []byte(workerid), 0666)
+						err := os.WriteFile(path.Join(homedir, "./FixedSectorWorkerId", storiface.SectorName(id)+".cfg"), []byte(workerid), 0666)
 						if err == nil {
 							break
 						}
 					}
 				}
 			}
-		}
-		//ending
-		id, err := nodeApi.PledgeSector(ctx)
-		if err != nil {
-			return err
 		}
 		//ENDING
 		fmt.Println("Created CC sector: ", id.Number)

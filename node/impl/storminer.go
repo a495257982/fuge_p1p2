@@ -152,7 +152,6 @@ func (sm *StorageMinerAPI) ActorSectorSize(ctx context.Context, addr address.Add
 }
 
 func (sm *StorageMinerAPI) PledgeSector(ctx context.Context) (abi.SectorID, error) {
-	log.Infof("第一层", ctx)
 	sr, err := sm.Miner.PledgeSector(ctx)
 	if err != nil {
 		return abi.SectorID{}, err
