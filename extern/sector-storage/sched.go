@@ -580,7 +580,7 @@ func (sh *scheduler) trySched() {
 			if len(acceptableWindows[sqi]) == 0 {
 				return
 			}
-			log.Infof("这个任务的acceptableWindows长度是", len(acceptableWindows[sqi]))
+			log.Infof("这个任务的acceptableWindows长度是 %d", len(acceptableWindows[sqi]))
 
 			// Pick best worker (shuffle in case some workers are equally as good)
 			/*rand.Shuffle(len(acceptableWindows[sqi]), func(i, j int) {
@@ -696,7 +696,6 @@ func (sh *scheduler) trySched() {
 			// keep unscheduled windows open
 			continue
 		}
-
 		newOpenWindows = append(newOpenWindows, window)
 	}
 	sh.openWindows = newOpenWindows

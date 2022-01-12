@@ -95,15 +95,6 @@ func GetLocalIp() string {
 
 //ENDING
 
-//added by jack
-func (l *LocalWorker) SetSession(sessionid uuid.UUID) error {
-
-	l.session = sessionid
-	return nil
-}
-
-//ENDING
-
 func newLocalWorker(executor ExecutorFunc, wcfg WorkerConfig, store stores.Store, local *stores.Local, sindex stores.SectorIndex, ret storiface.WorkerReturn, cst *statestore.StateStore) *LocalWorker {
 	acceptTasks := map[sealtasks.TaskType]struct{}{}
 	for _, taskType := range wcfg.TaskTypes {
@@ -137,6 +128,7 @@ func newLocalWorker(executor ExecutorFunc, wcfg WorkerConfig, store stores.Store
 		noSwap:          wcfg.NoSwap,
 		ignoreResources: wcfg.IgnoreResourceFiltering,
 		//session:         uuid.New(),
+		session: uuid.MustParse(sessionid),
 		closing: make(chan struct{}),
 	}
 
@@ -163,7 +155,6 @@ func newLocalWorker(executor ExecutorFunc, wcfg WorkerConfig, store stores.Store
 			}
 		}
 	}()
-	w.SetSession(uuid.MustParse(sessionid))
 	return w
 }
 
