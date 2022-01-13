@@ -131,17 +131,14 @@ func newLocalWorker(executor ExecutorFunc, wcfg WorkerConfig, store stores.Store
 		session: uuid.MustParse(sessionid),
 		closing: make(chan struct{}),
 	}
-
 	if w.executor == nil {
 		w.executor = w.ffiExec
 	}
-
 	unfinished, err := w.ct.unfinished()
 	if err != nil {
 		log.Errorf("reading unfinished tasks: %+v", err)
 		return w
 	}
-
 	go func() {
 		for _, call := range unfinished {
 			err := storiface.Err(storiface.ErrTempWorkerRestart, xerrors.New("worker restarted"))

@@ -117,9 +117,7 @@ func (sw *schedWorker) handleWorker() {
 		// ENDING
 
 	}()
-
 	defer sw.heartbeatTimer.Stop()
-
 	for {
 		{
 			sched.workersLk.Lock()

@@ -519,12 +519,14 @@ func (sh *scheduler) trySched() {
 						ip, ok := sh.workersip[wid]
 						if ok && ip != "" {
 							for Wid, iip := range sh.workersip {
+								log.Info("ip he workid对应", iip, wid)
 								if iip == ip && Wid != wid {
 									wid = Wid
 									break
 								}
 							}
 						}
+						log.Info("执行p2的组的是%s workerid%s", ip, wid)
 						fixed(wid)
 					}
 					sh.fixedLK.Unlock()
@@ -616,6 +618,7 @@ func (sh *scheduler) trySched() {
 
 	// Step 2
 	scheduled := 0
+
 	rmQueue := make([]int, 0, queueLen)
 
 	for sqi := 0; sqi < queueLen; sqi++ {
