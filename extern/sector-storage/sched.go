@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -585,7 +587,7 @@ func (sh *scheduler) trySched() {
 			log.Infof("这个任务的acceptableWindows长度是 %d", len(acceptableWindows[sqi]))
 
 			// Pick best worker (shuffle in case some workers are equally as good)
-			/*rand.Shuffle(len(acceptableWindows[sqi]), func(i, j int) {
+			rand.Shuffle(len(acceptableWindows[sqi]), func(i, j int) {
 				acceptableWindows[sqi][i], acceptableWindows[sqi][j] = acceptableWindows[sqi][j], acceptableWindows[sqi][i] // nolint:scopelint
 			})
 			sort.SliceStable(acceptableWindows[sqi], func(i, j int) bool {
@@ -608,7 +610,7 @@ func (sh *scheduler) trySched() {
 					log.Errorf("selecting best worker: %s", err)
 				}
 				return r
-			})*/
+			})
 		}(i)
 	}
 	wg.Wait()
@@ -623,37 +625,36 @@ func (sh *scheduler) trySched() {
 
 	for sqi := 0; sqi < queueLen; sqi++ {
 		task := (*sh.schedQueue)[sqi]
-		/*needRes := ResourceTable[task.taskType][task.sector.ProofType]*/
-
+		needRes := ResourceTable[task.taskType][task.sector.ProofType]
 		selectedWindow := -1
-		for _, wnd := range acceptableWindows[task.indexHeap] {
-			/*wid := sh.openWindows[wnd].worker
-			info := sh.workers[wid].info
+		if task.taskType == sealtasks.TTCommit1 || task.taskType == sealtasks.TTCommit2 {
+			for _, wnd := range acceptableWindows[task.indexHeap] {
+				wid := sh.openWindows[wnd].worker
+				info := sh.workers[wid].info
 
-			log.Debugf("SCHED try assign sqi:%d sector %d to window %d", sqi, task.sector.ID.Number, wnd)
+				log.Debugf("SCHED try assign sqi:%d sector %d to window %d", sqi, task.sector.ID.Number, wnd)
 
-			// TODO: allow bigger windows
-			if !windows[wnd].allocated.canHandleRequest(needRes, wid, "schedAssign", info) {
-				continue
+				// TODO: allow bigger windows
+				if !windows[wnd].allocated.canHandleRequest(needRes, wid, "schedAssign", info) {
+					continue
+				}
+
+				log.Debugf("SCHED ASSIGNED sqi:%d sector %d task %s to window %d", sqi, task.sector.ID.Number, task.taskType, wnd)
+
+				windows[wnd].allocated.add(info.Resources, needRes)
+				// TODO: We probably want to re-sort acceptableWindows here based on new
+				//  workerHandle.utilization + windows[wnd].allocated.utilization (workerHandle.utilization is used in all
+				//  task selectors, but not in the same way, so need to figure out how to do that in a non-O(n^2 way), and
+				//  without additional network roundtrips (O(n^2) could be avoided by turning acceptableWindows.[] into heaps))
+
+				selectedWindow = wnd
+				break
 			}
-
-			log.Debugf("SCHED ASSIGNED sqi:%d sector %d task %s to window %d", sqi, task.sector.ID.Number, task.taskType, wnd)
-
-			windows[wnd].allocated.add(info.Resources, needRes)*/
-			// TODO: We probably want to re-sort acceptableWindows here based on new
-			//  workerHandle.utilization + windows[wnd].allocated.utilization (workerHandle.utilization is used in all
-			//  task selectors, but not in the same way, so need to figure out how to do that in a non-O(n^2 way), and
-			//  without additional network roundtrips (O(n^2) could be avoided by turning acceptableWindows.[] into heaps))
-
-			selectedWindow = wnd
-			break
 		}
-
 		if selectedWindow < 0 {
 			// all windows full
 			continue
 		}
-
 		windows[selectedWindow].todo = append(windows[selectedWindow].todo, task)
 		//added by jack
 		/*	if task.taskType == sealtasks.TTAddPiece {
