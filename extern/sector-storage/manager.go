@@ -181,7 +181,6 @@ func New(ctx context.Context, lstor *stores.Local, stor *stores.Remote, ls store
 	if err != nil {
 		return nil, xerrors.Errorf("adding local worker: %w", err)
 	}
-
 	return m, nil
 }
 

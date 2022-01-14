@@ -335,7 +335,6 @@ var provingDeadlineInfoCmd = &cli.Command{
 			if err != nil {
 				return err
 			}
-
 			fmt.Printf("Partition Index:          %d\n", pIdx)
 			fmt.Printf("Sectors:                  %d\n", sectorCount)
 			fmt.Printf("Sector Numbers:           %v\n", sectorNumbers)

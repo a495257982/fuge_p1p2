@@ -392,10 +392,8 @@ func (sh *scheduler) runSched() {
 
 				req.done()
 			}
-
 			sh.trySched()
 		}
-
 	}
 }
 
@@ -442,8 +440,8 @@ func (sh *scheduler) trySched() {
 	sh.workersLk.RLock()
 	defer sh.workersLk.RUnlock()
 
-	windowsLen := len(sh.openWindows)
-	queueLen := sh.schedQueue.Len()
+	windowsLen := len(sh.openWindows) //多少个进程
+	queueLen := sh.schedQueue.Len()   //消息队列
 
 	log.Debugf("SCHED %d queued; %d open windows", queueLen, windowsLen)
 
@@ -463,16 +461,16 @@ func (sh *scheduler) trySched() {
 	for i := 0; i < queueLen; i++ {
 		throttle <- struct{}{}
 
-		go func(sqi int) {
+		go func(sqi int) { //每个消息开启一个goruntine去选择适合的worker进程。
 			defer wg.Done()
 			defer func() {
 				<-throttle
 			}()
-			task := (*sh.schedQueue)[sqi]
-			/*	needRes := ResourceTable[task.taskType][task.sector.ProofType]*/
+			task := (*sh.schedQueue)[sqi] //先从消息队列中取出消息
+			needRes := ResourceTable[task.taskType][task.sector.ProofType]
 
 			task.indexHeap = sqi
-			for wnd, windowRequest := range sh.openWindows {
+			for wnd, windowRequest := range sh.openWindows { //遍历所有的 还在进行工作的进程。这个进程里有自己正在做的任务列表
 				// added by jack
 				/*defer func() {
 					wid, _ := sh.fixedp1worker[task.sector.ID]
@@ -521,8 +519,9 @@ func (sh *scheduler) trySched() {
 						ip, ok := sh.workersip[wid]
 						if ok && ip != "" {
 							for Wid, iip := range sh.workersip {
-								log.Info("ip he workid对应", iip, wid)
+								log.Info("ip he workid对应", iip, wid.String())
 								if iip == ip && Wid != wid {
+									log.Info("成功取出")
 									wid = Wid
 									break
 								}
@@ -547,7 +546,7 @@ func (sh *scheduler) trySched() {
 					}
 				}
 				//ENDING
-				worker, ok := sh.workers[windowRequest.worker]
+				worker, ok := sh.workers[windowRequest.worker] //取出这个进程的workerid
 				if !ok {
 					log.Errorf("worker referenced by windowRequest not found (worker: %s)", windowRequest.worker)
 					// TODO: How to move forward here?
@@ -560,9 +559,9 @@ func (sh *scheduler) trySched() {
 				}
 
 				// TODO: allow bigger windows
-				/*	if !windows[wnd].allocated.canHandleRequest(needRes, windowRequest.worker, "schedAcceptable", worker.info) {
+				if !windows[wnd].allocated.canHandleRequest(needRes, windowRequest.worker, "schedAcceptable", worker.info) {
 					continue
-				}*/
+				}
 
 				rpcCtx, cancel := context.WithTimeout(task.ctx, SelectorTimeout)
 				ok, err := task.sel.Ok(rpcCtx, task.taskType, task.sector.ProofType, worker)
@@ -627,7 +626,7 @@ func (sh *scheduler) trySched() {
 		task := (*sh.schedQueue)[sqi]
 		needRes := ResourceTable[task.taskType][task.sector.ProofType]
 		selectedWindow := -1
-		if task.taskType == sealtasks.TTCommit1 || task.taskType == sealtasks.TTCommit2 {
+		if task.taskType != sealtasks.TTAddPiece && task.taskType != sealtasks.TTPreCommit1 && task.taskType != sealtasks.TTPreCommit2 {
 			for _, wnd := range acceptableWindows[task.indexHeap] {
 				wid := sh.openWindows[wnd].worker
 				info := sh.workers[wid].info
@@ -656,14 +655,6 @@ func (sh *scheduler) trySched() {
 			continue
 		}
 		windows[selectedWindow].todo = append(windows[selectedWindow].todo, task)
-		//added by jack
-		/*	if task.taskType == sealtasks.TTAddPiece {
-			sh.fixedLK.Lock()
-			sh.fixedp1worker[task.sector.ID] = sh.openWindows[selectedWindow].worker
-			sh.fixedLK.Unlock()
-			sh.sync_taskfile()
-		}*/
-		//ENDING
 		rmQueue = append(rmQueue, sqi)
 		scheduled++
 	}
@@ -672,7 +663,6 @@ func (sh *scheduler) trySched() {
 			sh.schedQueue.Remove(rmQueue[i])
 		}
 	}
-
 	// Step 3
 
 	if scheduled == 0 {
