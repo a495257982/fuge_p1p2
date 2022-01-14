@@ -502,6 +502,7 @@ func (sh *scheduler) trySched() {
 								sh.fixedLK.Unlock()
 								sh.sync_taskfile()
 								fixed(WorkerID(uuid.MustParse(string(data))))
+								log.Info("ap在 这个workerid做", uuid.MustParse(string(data)))
 							}
 						}
 					}
