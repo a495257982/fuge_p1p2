@@ -24,7 +24,6 @@ type Band struct {
 //added by pan
 type WorkerInfo struct {
 	Hostname string
-
 	//added by jack
 	Ipstr string
 	//ENDING

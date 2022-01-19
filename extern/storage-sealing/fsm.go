@@ -290,7 +290,6 @@ func (m *Sealing) plan(events []statemachine.Event, state *SectorInfo) (func(sta
 				p = planOne() // in case we're in a really weird state, allow restart / update state / remove
 			}
 		}
-
 		if p == nil {
 			return nil, 0, xerrors.Errorf("planner for state %s not found", state.State)
 		}
@@ -548,9 +547,7 @@ func (m *Sealing) restartSectors(ctx context.Context) error {
 			log.Errorf("restarting sector %d: %+v", sector.SectorNumber, err)
 		}
 	}
-
 	// TODO: Grab on-chain sector set and diff with trackedSectors
-
 	return nil
 }
 
