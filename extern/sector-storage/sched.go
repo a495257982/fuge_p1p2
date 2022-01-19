@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -467,7 +469,7 @@ func (sh *scheduler) trySched() {
 				<-throttle
 			}()
 			task := (*sh.schedQueue)[sqi]
-			/*	needRes := ResourceTable[task.taskType][task.sector.ProofType]*/
+			needRes := ResourceTable[task.taskType][task.sector.ProofType]
 
 			task.indexHeap = sqi
 			for wnd, windowRequest := range sh.openWindows {
@@ -556,10 +558,13 @@ func (sh *scheduler) trySched() {
 				}
 
 				// TODO: allow bigger windows
-				/*	if !windows[wnd].allocated.canHandleRequest(needRes, windowRequest.worker, "schedAcceptable", worker.info) {
-					continue
-				}*/
-
+				//added by jack
+				if task.taskType == sealtasks.TTCommit1 || task.taskType == sealtasks.TTCommit2 {
+					if !windows[wnd].allocated.canHandleRequest(needRes, windowRequest.worker, "schedAcceptable", worker.info) {
+						continue
+					}
+				}
+				// ending
 				rpcCtx, cancel := context.WithTimeout(task.ctx, SelectorTimeout)
 				ok, err := task.sel.Ok(rpcCtx, task.taskType, task.sector.ProofType, worker)
 				cancel()
@@ -581,32 +586,34 @@ func (sh *scheduler) trySched() {
 				return
 			}
 			log.Infof("这个任务的acceptableWindows长度是 %d", len(acceptableWindows[sqi]))
+			if task.taskType == sealtasks.TTCommit1 || task.taskType == sealtasks.TTCommit2 {
+				// Pick best worker (shuffle in case some workers are equally as good)
+				rand.Shuffle(len(acceptableWindows[sqi]), func(i, j int) {
+					acceptableWindows[sqi][i], acceptableWindows[sqi][j] = acceptableWindows[sqi][j], acceptableWindows[sqi][i] // nolint:scopelint
+				})
+				sort.SliceStable(acceptableWindows[sqi], func(i, j int) bool {
+					wii := sh.openWindows[acceptableWindows[sqi][i]].worker // nolint:scopelint
+					wji := sh.openWindows[acceptableWindows[sqi][j]].worker // nolint:scopelint
 
-			// Pick best worker (shuffle in case some workers are equally as good)
-			/*rand.Shuffle(len(acceptableWindows[sqi]), func(i, j int) {
-				acceptableWindows[sqi][i], acceptableWindows[sqi][j] = acceptableWindows[sqi][j], acceptableWindows[sqi][i] // nolint:scopelint
-			})
-			sort.SliceStable(acceptableWindows[sqi], func(i, j int) bool {
-				wii := sh.openWindows[acceptableWindows[sqi][i]].worker // nolint:scopelint
-				wji := sh.openWindows[acceptableWindows[sqi][j]].worker // nolint:scopelint
+					if wii == wji {
+						// for the same worker prefer older windows
+						return acceptableWindows[sqi][i] < acceptableWindows[sqi][j] // nolint:scopelint
+					}
 
-				if wii == wji {
-					// for the same worker prefer older windows
-					return acceptableWindows[sqi][i] < acceptableWindows[sqi][j] // nolint:scopelint
-				}
+					wi := sh.workers[wii]
+					wj := sh.workers[wji]
 
-				wi := sh.workers[wii]
-				wj := sh.workers[wji]
+					rpcCtx, cancel := context.WithTimeout(task.ctx, SelectorTimeout)
+					defer cancel()
 
-				rpcCtx, cancel := context.WithTimeout(task.ctx, SelectorTimeout)
-				defer cancel()
+					r, err := task.sel.Cmp(rpcCtx, task.taskType, wi, wj)
+					if err != nil {
+						log.Errorf("selecting best worker: %s", err)
+					}
+					return r
+				})
+			}
 
-				r, err := task.sel.Cmp(rpcCtx, task.taskType, wi, wj)
-				if err != nil {
-					log.Errorf("selecting best worker: %s", err)
-				}
-				return r
-			})*/
 		}(i)
 	}
 	wg.Wait()
@@ -620,23 +627,26 @@ func (sh *scheduler) trySched() {
 
 	for sqi := 0; sqi < queueLen; sqi++ {
 		task := (*sh.schedQueue)[sqi]
-		/*needRes := ResourceTable[task.taskType][task.sector.ProofType]*/
+		needRes := ResourceTable[task.taskType][task.sector.ProofType]
 
 		selectedWindow := -1
 		for _, wnd := range acceptableWindows[task.indexHeap] {
-			/*wid := sh.openWindows[wnd].worker
-			info := sh.workers[wid].info
 
-			log.Debugf("SCHED try assign sqi:%d sector %d to window %d", sqi, task.sector.ID.Number, wnd)
+			if task.taskType == sealtasks.TTCommit1 || task.taskType == sealtasks.TTCommit2 {
+				wid := sh.openWindows[wnd].worker
+				info := sh.workers[wid].info
 
-			// TODO: allow bigger windows
-			if !windows[wnd].allocated.canHandleRequest(needRes, wid, "schedAssign", info) {
-				continue
+				log.Debugf("SCHED try assign sqi:%d sector %d to window %d", sqi, task.sector.ID.Number, wnd)
+
+				// TODO: allow bigger windows
+				if !windows[wnd].allocated.canHandleRequest(needRes, wid, "schedAssign", info) {
+					continue
+				}
+
+				log.Debugf("SCHED ASSIGNED sqi:%d sector %d task %s to window %d", sqi, task.sector.ID.Number, task.taskType, wnd)
+
+				windows[wnd].allocated.add(info.Resources, needRes)
 			}
-
-			log.Debugf("SCHED ASSIGNED sqi:%d sector %d task %s to window %d", sqi, task.sector.ID.Number, task.taskType, wnd)
-
-			windows[wnd].allocated.add(info.Resources, needRes)*/
 			// TODO: We probably want to re-sort acceptableWindows here based on new
 			//  workerHandle.utilization + windows[wnd].allocated.utilization (workerHandle.utilization is used in all
 			//  task selectors, but not in the same way, so need to figure out how to do that in a non-O(n^2 way), and
