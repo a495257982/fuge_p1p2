@@ -502,7 +502,7 @@ func (sh *scheduler) trySched() {
 								sh.fixedLK.Unlock()
 								sh.sync_taskfile()
 								fixed(WorkerID(uuid.MustParse(string(data))))
-								log.Info("ap在 这个workerid做", uuid.MustParse(string(data)))
+								log.Info("ap在 这个workerid做:", uuid.MustParse(string(data)))
 							}
 						}
 					}
@@ -512,6 +512,7 @@ func (sh *scheduler) trySched() {
 					sh.fixedLK.Unlock()
 					if ok {
 						fixed(wid)
+						log.Info("p1在 这个workerid做:", wid.String())
 					}
 				case sealtasks.TTPreCommit2:
 					sh.fixedLK.Lock()
@@ -520,7 +521,7 @@ func (sh *scheduler) trySched() {
 						ip, ok := sh.workersip[wid]
 						if ok && ip != "" {
 							for Wid, iip := range sh.workersip {
-								log.Info("ip he workid对应", iip, wid.String())
+								log.Info("workersipmap", iip, " ____", wid.String())
 								if iip == ip && Wid != wid {
 									log.Info("成功取出")
 									wid = Wid
@@ -528,8 +529,8 @@ func (sh *scheduler) trySched() {
 								}
 							}
 						}
-						log.Info("执行p2的组的是%s workerid%s", ip, wid)
 						fixed(wid)
+						log.Info("p2 组和wiorkerid分别为：", ip, "___  ", wid)
 					}
 					sh.fixedLK.Unlock()
 				default:
