@@ -92,6 +92,29 @@ func GetLocalIp() string {
 	log.Info("这个进程的组 is %s", Path)
 	return Path
 }
+func GetProName() string {
+	/*addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		log.Errorf("read worker local ip failed: %+v", err)
+		return ""
+	} else {
+		log.Info("read worker ip success ")
+	}
+
+	ip := ""
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				ip = ipnet.IP.String()
+				break
+			}
+		}
+	}
+	*/
+	Path := os.Getenv("P_NAME")
+	log.Info("这个进程 进程名是 %s", Path)
+	return Path
+}
 
 //ENDING
 
@@ -531,6 +554,7 @@ func (l *LocalWorker) Info(context.Context) (storiface.WorkerInfo, error) {
 	if err != nil {
 		panic(err)
 	}
+	hostname = hostname + GetProName()
 
 	gpus, err := ffi.GetGPUDevices()
 	if err != nil {

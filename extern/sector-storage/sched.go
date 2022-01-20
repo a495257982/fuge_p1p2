@@ -559,7 +559,7 @@ func (sh *scheduler) trySched() {
 
 				// TODO: allow bigger windows
 				//added by jack
-				if task.taskType == sealtasks.TTCommit1 || task.taskType == sealtasks.TTCommit2 {
+				if task.taskType != sealtasks.TTAddPiece || task.taskType != sealtasks.TTPreCommit1 || task.taskType != sealtasks.TTPreCommit2 {
 					if !windows[wnd].allocated.canHandleRequest(needRes, windowRequest.worker, "schedAcceptable", worker.info) {
 						continue
 					}
@@ -586,7 +586,7 @@ func (sh *scheduler) trySched() {
 				return
 			}
 			log.Infof("这个任务的acceptableWindows长度是 %d", len(acceptableWindows[sqi]))
-			if task.taskType == sealtasks.TTCommit1 || task.taskType == sealtasks.TTCommit2 {
+			if task.taskType != sealtasks.TTAddPiece || task.taskType != sealtasks.TTPreCommit1 || task.taskType != sealtasks.TTPreCommit2 {
 				// Pick best worker (shuffle in case some workers are equally as good)
 				rand.Shuffle(len(acceptableWindows[sqi]), func(i, j int) {
 					acceptableWindows[sqi][i], acceptableWindows[sqi][j] = acceptableWindows[sqi][j], acceptableWindows[sqi][i] // nolint:scopelint
