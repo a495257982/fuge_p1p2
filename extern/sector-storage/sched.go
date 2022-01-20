@@ -632,7 +632,7 @@ func (sh *scheduler) trySched() {
 		selectedWindow := -1
 		for _, wnd := range acceptableWindows[task.indexHeap] {
 
-			if task.taskType == sealtasks.TTCommit1 || task.taskType == sealtasks.TTCommit2 {
+			if task.taskType != sealtasks.TTAddPiece || task.taskType != sealtasks.TTPreCommit1 || task.taskType != sealtasks.TTPreCommit2 {
 				wid := sh.openWindows[wnd].worker
 				info := sh.workers[wid].info
 
