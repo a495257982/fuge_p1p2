@@ -499,11 +499,13 @@ func (sh *scheduler) trySched() {
 						if !notexist {
 							data, err := os.ReadFile(path.Join(homedir, "./FixedSectorWorkerId", storiface.SectorName(task.sector.ID)+".cfg"))
 							if err == nil {
-								sh.fixedLK.Lock()
-								sh.fixedp1worker[task.sector.ID] = WorkerID(uuid.MustParse(string(data)))
-								sh.fixedLK.Unlock()
-								sh.sync_taskfile()
-								fixed(WorkerID(uuid.MustParse(string(data))))
+								if len(string(data)) == 36 {
+									sh.fixedLK.Lock()
+									sh.fixedp1worker[task.sector.ID] = WorkerID(uuid.MustParse(string(data)))
+									sh.fixedLK.Unlock()
+									sh.sync_taskfile()
+									fixed(WorkerID(uuid.MustParse(string(data))))
+								}
 							}
 						}
 					}
